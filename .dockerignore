@@ -1,0 +1,22 @@
+# Ignore vendor folder (biar container yang generate sendiri)
+vendor/
+
+# Ignore environment files
+.env
+.env.local
+.env.production
+
+# Ignore node/npm files (kalau gak ada juga gak masalah)
+node_modules/
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore IDE/Editor files
+.vscode/
+.idea/
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
