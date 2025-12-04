@@ -1,29 +1,34 @@
-# Gunakan base image PHP + Apache
+# Use official PHP image with required extensions
 FROM php:8.2-apache
 
-# Install extensions yang dibutuhkan Lumen
+# Install dependencies
 RUN apt-get update && apt-get install -y \
-    unzip \
-    libzip-dev \
-    && docker-php-ext-install pdo pdo_mysql zip
+    zip unzip git && \
+    docker-php-ext-install pdo pdo_mysql
 
-# Install Composer
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# Copy project ke container
-COPY . /var/www/html
+# Enable Apache mod_rewrite
+RUN a2enmod rewrite
 
 # Set working directory
 WORKDIR /var/www/html
 
-# Install dependency (tanpa dev)
-RUN composer install --no-dev --optimize-autoloader
+# Copy project files
+COPY . .
 
-# Set permission folder storage & bootstrap
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+# Set permissions (only if folder exists)
+RUN mkdir -p bootstrap/cache storage \
+    && chmod -R 775 bootstrap/cache storage \
+    && chown -R www-data:www-data bootstrap/cache storage
 
-# Expose port 80
-EXPOSE 80
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Jalankan server apache
+# Install dependencies
+RUN composer install --no-dev --prefer-dist --no-interaction
+
+# Apache config override so public/ is the root
+RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available/000-default.conf
+
+EXPOSE 3000
+
 CMD ["apache2-foreground"]

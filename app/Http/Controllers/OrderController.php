@@ -5,6 +5,8 @@ use App\Models\Notification;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Transaction;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -57,6 +59,60 @@ class OrderController extends Controller
             // Update total harga pesanan
             $order->update(['total' => $total]);
 
+            // Buat transaksi otomatis untuk order ini
+            $transaction = Transaction::create([
+                'order_id' => $order->id,
+                'payment_method' => 'cod', // default, bisa ubah sesuai kebutuhan
+                'gross_amount' => $total,
+                'payment_status' => 'pending',
+            ]);
+
+            // Buat snap token midtrans
+            \Midtrans\Config::$serverKey = config('midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('midtrans.is_production');
+            \Midtrans\Config::$isSanitized = true;
+            \Midtrans\Config::$is3ds = true;
+
+            $params = [
+                'transaction_details' => [
+                    'order_id' => 'ORDER-' . $transaction->id . '-' . time(),
+                    'gross_amount' => $transaction->gross_amount,
+                ],
+                'customer_details' => [
+                    'first_name' => $user->name,
+                    'email' => $user->email,
+                ],
+            ];
+
+            $snapToken = \Midtrans\Snap::getSnapToken($params);
+
+            // simpan
+            $transaction->update([
+                'snap_token' => $snapToken,
+                'midtrans_order_id' => $params['transaction_details']['order_id']
+            ]);
+
+
+            // Kirim notifikasi ke user & admin bisa di sini juga
+            Notification::create([
+                'user_id' => $user->id,
+                'title' => 'Transaksi Dibuat',
+                'message' => 'Transaksi kamu senilai Rp' . number_format($total) . ' telah dibuat dan menunggu konfirmasi.',
+                'type' => 'transaction',
+                'reference_id' => $transaction->id,
+            ]);
+
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'title' => 'Transaksi Baru Masuk',
+                'message' => 'User ' . $user->name . ' membuat transaksi senilai Rp' . number_format($total),
+                'type' => 'transaction',
+                'reference_id' => $transaction->id,
+            ]);
+            }
+
             // Kirim notifikasi ke admin
             Notification::create([
                 'user_id' => 1, // admin
@@ -67,7 +123,12 @@ class OrderController extends Controller
             ]);
 
             DB::commit();
-            return response()->json($order->load('items.product'), 201);
+
+            return response()->json([
+                'order' => $order->load('items.product'),
+                'transaction' => $transaction,
+                'snap_token' => $snapToken
+            ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();

@@ -1,12 +1,26 @@
 <?php
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+
 /** @var \Laravel\Lumen\Routing\Router $router */
 
 $router->get('/', function () use ($router) {
     return $router->app->version();
 });
+$router->post('test-callback', function(Request $request){
+    Log::info('Test callback: ', $request->all());
+    return response()->json(['message'=>'ok']);
+});
+
 
 $router->group(['prefix' => 'api'], function () use ($router) {
+
+    // Midtrans
+    $router->post('midtrans/token', 'MidtransController@createTransaction');
+    $router->post('midtrans/callback', 'MidtransController@callback');
+
 
     // Auth
     $router->post('register', 'UserController@register');

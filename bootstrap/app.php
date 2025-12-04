@@ -28,6 +28,9 @@ $app->withFacades();
 
 $app->withEloquent();
 
+$app->configure('midtrans');
+
+
 /*
 |--------------------------------------------------------------------------
 | Register Container Bindings

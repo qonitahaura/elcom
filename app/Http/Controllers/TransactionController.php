@@ -39,17 +39,6 @@ class TransactionController extends Controller
         $order = Order::findOrFail($validated['order_id']);
         $orderUser = $order->user; // relasi ke user pemilik order
 
-        $existing = Transaction::where('order_id', $validated['order_id'])
-        ->where('payment_status', 'pending')
-        ->first();
-        
-        if ($existing) {
-            return response()->json([
-                'message' => 'Masih ada transaksi yang pending.',
-                'transaction' => $existing
-            ], 409);
-        }
-
         // Buat transaksi baru
         $transaction = Transaction::create([
             'order_id' => $order->id,
