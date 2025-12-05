@@ -26,7 +26,7 @@ class MidtransController extends Controller
         $params = [
             'transaction_details' => [
                 'order_id' => $order->id,
-                'gross_amount' => $order->total_price,
+                'gross_amount' => $order->total,
             ],
             'customer_details' => [
                 'first_name' => $order->user->name,
@@ -41,7 +41,7 @@ class MidtransController extends Controller
             'order_id' => $order->id,
             'payment_method' => 'midtrans',
             'payment_status' => 'pending',
-            'gross_amount' => $order->total_price,
+            'gross_amount' => $order->total,
             'snap_token' => $snapToken
         ]);
 
