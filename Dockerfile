@@ -39,4 +39,4 @@ RUN composer install --no-dev --prefer-dist --no-interaction
 
 EXPOSE ${PORT}
 
-CMD ["apache2-foreground"]
+CMD ["apache2 -D FOREGROUND"]
