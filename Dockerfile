@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y \
 # Enable rewrite
 RUN a2enmod rewrite
 
-# Allow .htaccess to work (IMPORTANT)
+# Allow .htaccess
 RUN sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
 
 # Set DocumentRoot to /public
@@ -17,25 +17,26 @@ RUN sed -i 's|/var/www/html|/var/www/html/public|g' /etc/apache2/sites-available
 # Fix ServerName warning
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# Change Apache port 80 -> 8080 (Railway requirement)
-RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf \
-    && sed -i 's/:80/:8080/g' /etc/apache2/sites-available/000-default.conf
+# ===============================
+# ❤️ Fix wajib untuk Railway
+# ===============================
+RUN sed -i 's/Listen 80/Listen ${PORT}/' /etc/apache2/ports.conf \
+    && sed -i 's/:80/:${PORT}/g' /etc/apache2/sites-available/000-default.conf
 
 WORKDIR /var/www/html
 
 # Copy project
 COPY . .
 
-# Permissions
+# Fix folder permissions
 RUN mkdir -p bootstrap/cache storage \
     && chmod -R 775 bootstrap/cache storage \
     && chown -R www-data:www-data bootstrap/cache storage
 
-# Install composer dependencies
+# Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --prefer-dist --no-interaction
 
-# Expose correct port for Railway
-EXPOSE 8080
+EXPOSE ${PORT}
 
 CMD ["apache2-foreground"]
