@@ -18,7 +18,7 @@ $router->post('test-callback', function(Request $request){
 $router->group(['prefix' => 'api'], function () use ($router) {
 
     // Midtrans
-    $router->post('midtrans/token', 'MidtransController@createTransaction');
+    $router->post('midtrans/token', 'MidtransController@createSnapToken');
     $router->post('midtrans/callback', 'MidtransController@callback');
 
 

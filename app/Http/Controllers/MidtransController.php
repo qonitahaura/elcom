@@ -56,42 +56,44 @@ class MidtransController extends Controller
 {
     $serverKey = config('midtrans.server_key');
 
-    // Ambil transaksi berdasarkan order_id
-    $transaction = Transaction::where('order_id', $request->order_id)->first();
+    $orderId = $request->order_id;
+    $statusCode = $request->status_code;
+    $grossAmount = $request->gross_amount;
+    $transactionStatus = $request->transaction_status;
+
+    // Validasi signature
+    $signatureCheck = hash(
+        "sha512",
+        $orderId . $statusCode . $grossAmount . $serverKey
+    );
+
+    if ($signatureCheck != $request->signature_key) {
+        return response()->json(['message' => 'Invalid signature'], 403);
+    }
+
+    // Cari transaksi
+    $transaction = Transaction::where('order_id', $orderId)->first();
 
     if (!$transaction) {
         return response()->json(['message' => 'Transaction not found'], 404);
     }
 
-    // Ambil gross amount dari DB
-    $grossAmount = $transaction->gross_amount;
+    // Update sesuai status dari Midtrans
+    if ($transactionStatus == "capture" || $transactionStatus == "settlement") {
+        $transaction->payment_status = "paid";
+    } elseif ($transactionStatus == "pending") {
+        $transaction->payment_status = "pending";
+    } elseif ($transactionStatus == "expire") {
+        $transaction->payment_status = "expired";
+    } elseif ($transactionStatus == "cancel" || $transactionStatus == "deny") {
+        $transaction->payment_status = "failed";
+    }
 
-    // BUAT DATA DUMMY UNTUK TESTING
-    $statusCode = "200";
-    $transactionStatus = "pending";
-    $transactionId = "TEST-" . uniqid();
+    $transaction->midtrans_order_id = $orderId;
+    $transaction->transaction_id = $request->transaction_id;
+    $transaction->save();
 
-    // Generate signature otomatis
-    $signature = hash(
-        'sha512',
-        $request->order_id . $statusCode . $grossAmount . $serverKey
-    );
-
-    // Update transaksi
-    $transaction->update([
-        'payment_status' => $transactionStatus,
-        'midtrans_order_id' => $request->order_id,
-        'transaction_id' => $transactionId
-    ]);
-
-    return response()->json([
-        'message' => 'Callback processed (AUTO TEST MODE)',
-        'generated_signature' => $signature,
-        'status_code' => $statusCode,
-        'transaction_status' => $transactionStatus,
-        'transaction_id' => $transactionId,
-        'gross_amount' => $grossAmount
-    ]);
+    return response()->json(['message' => 'Callback processed successfully']);
 }
 
 }
