@@ -38,6 +38,8 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         // Logout dan Profile
         $router->post('logout', 'UserController@logout');
         $router->get('profile', 'UserController@profile');
+        $router->post('/profile/update', 'UserController@updateProfile');
+
 
         // Cart
         $router->get('carts', 'CartController@index');

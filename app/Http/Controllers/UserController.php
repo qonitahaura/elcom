@@ -103,6 +103,47 @@ class UserController extends Controller
         return response()->json(['message' => 'User updated', 'user' => $user]);
     }
 
+    public function updateProfile(Request $request)
+{
+    $token = $request->bearerToken();
+
+    $user = User::where('api_token', hash('sha256', $token))->first();
+
+    if (!$user) {
+        return response()->json(['success' => false, 'message' => 'Invalid token'], 401);
+    }
+
+    // Validasi
+    $validator = Validator::make($request->all(), [
+        'phone' => 'required',
+        'address' => 'required',
+        'image' => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+    }
+
+    // Upload image jika ada
+    if ($request->hasFile('image')) {
+        $filename = time().'_'.$request->image->getClientOriginalName();
+        $request->image->move(public_path('uploads/profile'), $filename);
+
+        $user->image = "uploads/profile/" . $filename;
+    }
+
+    $user->phone = $request->phone;
+    $user->address = $request->address;
+    $user->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Profile updated',
+        'user' => $user
+    ]);
+}
+
+
     public function destroy($id)
     {
         $user = User::find($id);
