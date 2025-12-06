@@ -43,19 +43,21 @@ class FavoriteController extends Controller
     }
 
     // Hapus favorit
-    public function destroy(Request $request, $id)
-    {
-        $user = $request->user();
+    public function destroy(Request $request, $productId)
+{
+    $user = $request->user();
 
-        $fav = Favorite::where('id', $id)
-            ->where('user_id', $user->id)
-            ->first();
+    $fav = Favorite::where('user_id', $user->id)
+        ->where('product_id', $productId)
+        ->first();
 
-        if (!$fav) {
-            return response()->json(['message' => 'Not found'], 404);
-        }
-
-        $fav->delete();
-        return response()->json(['message' => 'Removed from favorites']);
+    if (!$fav) {
+        return response()->json(['message' => 'Not found'], 404);
     }
+
+    $fav->delete();
+
+    return response()->json(['message' => 'Removed']);
+}
+
 }
