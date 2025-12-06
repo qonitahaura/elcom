@@ -11,4 +11,5 @@ class Product extends Model {
     public function carts() { return $this->hasMany(Cart::class, 'product_id'); }
     public function orderItems() { return $this->hasMany(OrderItem::class, 'product_id'); }
     public function favorites() { return $this->hasMany(Favorite::class, 'product_id'); }
+    
 }

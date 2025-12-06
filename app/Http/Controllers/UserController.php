@@ -38,7 +38,7 @@ class UserController extends Controller
         'success' => true,
         'message' => 'User registered',
         'user' => $user,
-        'token' => $plainToken  // <- penting!
+        'token' => $plainToken // <- penting!
     ], 201);
 }
 
@@ -147,6 +147,7 @@ class UserController extends Controller
     return response()->json([
         'success' => true,
         'message' => 'Profile updated',
+        'token' => $token,
         'user' => $user
     ]);
 }
