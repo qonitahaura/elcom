@@ -12,28 +12,36 @@ class UserController extends Controller
 {
     // Register user baru
     public function register(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users',
-            'password' => 'required|min:6',
-        ]);
+{
+    $validator = Validator::make($request->all(), [
+        'name'     => 'required|string|max:255',
+        'email'    => 'required|email|unique:users',
+        'password' => 'required|min:6',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
-        $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
-            'password' => Hash::make($request->password),
-            'phone'    => $request->phone,
-            'image'    => $request->image,
-            'address'  => $request->address,
-        ]);
-
-        return response()->json(['message' => 'User registered', 'user' => $user], 201);
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
     }
+
+    $user = User::create([
+        'name'     => $request->name,
+        'email'    => $request->email,
+        'password' => Hash::make($request->password),
+    ]);
+
+    // 👇 Generate token langsung setelah register
+    $plainToken = Str::random(60);
+    $user->api_token = hash('sha256', $plainToken);
+    $user->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'User registered',
+        'user' => $user,
+        'token' => $plainToken  // <- penting!
+    ], 201);
+}
+
 
     // Login user dan buat token
     public function login(Request $request)
